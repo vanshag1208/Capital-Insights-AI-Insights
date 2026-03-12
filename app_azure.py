@@ -4,11 +4,9 @@ import pandas as pd
 from google import genai
 
 # ---------------------------
-# Load environment variables
+# Secrets from Streamlit
 # ---------------------------
 
- 
-DB_DRIVER = st.secrets["DB_DRIVER"]
 DB_SERVER = st.secrets["DB_SERVER"]
 DB_DATABASE = st.secrets["DB_DATABASE"]
 DB_UID = st.secrets["DB_UID"]
@@ -16,22 +14,21 @@ DB_PWD = st.secrets["DB_PWD"]
 
 GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
 
-
 # ---------------------------
-# 1. Gemini Client
+# Gemini Client
 # ---------------------------
 
 client = genai.Client(api_key=GEMINI_API_KEY)
 
 # ---------------------------
-# 2. SQL Server Connection
+# SQL Server Connection
 # ---------------------------
 
 conn = pymssql.connect(
     server=DB_SERVER,
     user=DB_UID,
     password=DB_PWD,
-    database=DB_DATABASE
+    database=DB_DATABASE,
 )
 
 cursor = conn.cursor()
@@ -39,44 +36,47 @@ cursor = conn.cursor()
 st.title("AI Stock Market Analyzer")
 
 # ---------------------------
-# 3. Fetch Symbols
+# Fetch Symbols
 # ---------------------------
+
 cursor.execute("SELECT DISTINCT Symbol FROM StockPriceDaily")
 symbols = [row[0] for row in cursor.fetchall()]
 
 # ---------------------------
-# 4. Selectbox for User Input
+# Selectbox
 # ---------------------------
+
 symbol = st.selectbox("Select Stock Symbol", symbols)
 
 # ---------------------------
-# 5. Analyze Button
+# Analyze Button
 # ---------------------------
+
 if st.button("Analyze Stock"):
 
     query = """
     SELECT TOP 10
-    TradeDate,
-    Symbol,
-    OpenPrice,
-    HighPrice,
-    LowPrice,
-    ClosePrice,
-    Volume
+        TradeDate,
+        Symbol,
+        OpenPrice,
+        HighPrice,
+        LowPrice,
+        ClosePrice,
+        Volume
     FROM StockPriceDaily
-    WHERE Symbol = ?
+    WHERE Symbol = %s
     ORDER BY TradeDate DESC
     """
 
-    cursor.execute(query, symbol)
+    cursor.execute(query, (symbol,))
     rows = cursor.fetchall()
 
     if not rows:
         st.error("Stock not found in database")
 
     else:
-        columns = [column[0] for column in cursor.description]
-        df = pd.DataFrame.from_records(rows, columns=columns)
+        columns = [col[0] for col in cursor.description]
+        df = pd.DataFrame(rows, columns=columns)
 
         st.subheader("Stock Data")
         st.dataframe(df)
@@ -84,18 +84,18 @@ if st.button("Analyze Stock"):
         stock_text = df.to_string(index=False)
 
         prompt = f"""
-        You are a financial analyst.
+You are a financial analyst.
 
-        Analyze the following stock OHLCV data.
+Analyze the following stock OHLCV data.
 
-        Provide:
-        1. Trend
-        2. Volatility
-        3. Short insight
+Provide:
+1. Trend
+2. Volatility
+3. Short insight
 
-        Stock Data:
-        {stock_text}
-        """
+Stock Data:
+{stock_text}
+"""
 
         response = client.models.generate_content(
             model="gemini-2.5-flash",
