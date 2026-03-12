@@ -1,6 +1,5 @@
-import os
 import streamlit as st
-import pyodbc
+import pymssql
 import pandas as pd
 from google import genai
 
@@ -28,18 +27,13 @@ client = genai.Client(api_key=GEMINI_API_KEY)
 # 2. SQL Server Connection
 # ---------------------------
 
-
-
-conn = pyodbc.connect(
-    f"DRIVER={{{DB_DRIVER}}};"
-    f"SERVER={DB_SERVER};"
-    f"DATABASE={DB_DATABASE};"
-    f"UID={DB_UID};"
-    f"PWD={DB_PWD};"
-    "Encrypt=yes;"
-    "TrustServerCertificate=no;"
-    "Connection Timeout=30;"
+conn = pymssql.connect(
+    server=DB_SERVER,
+    user=DB_UID,
+    password=DB_PWD,
+    database=DB_DATABASE
 )
+
 cursor = conn.cursor()
 
 st.title("AI Stock Market Analyzer")
