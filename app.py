@@ -6,7 +6,7 @@ from google import genai
 # ---------------------------
 # 1. Gemini Client
 # ---------------------------
-client = genai.Client(api_key="AIzaSyDMtZ5kYE9yocVwY1D61lcgkTHTAu9Jo9U")
+client = genai.Client(api_key="GEMINI_API_KEY")
 
 # ---------------------------
 # 2. SQL Server Connection
